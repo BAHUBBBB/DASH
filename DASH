@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Urban Traffic Management System</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f9; }
+    h1, h2 { color: #333; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .alert-box { background: #ffe6e6; border-left: 5px solid #ff4d4d; padding: 10px; margin-bottom: 10px; font-weight: bold; color: #cc0000; }
+    .badge { padding: 4px 8px; border-radius: 4px; color: white; font-size: 12px; }
+    .Low { background: #28a745; }
+    .Moderate { background: #ffc107; color: black; }
+    .High { background: #fd7e14; }
+    .Critical { background: #dc3545; }
+    table { width: 100%; border-collapse: collapse; background: white; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background: #007bff; color: white; }
+    .filters { margin-bottom: 15px; }
+    select, input { padding: 8px; font-size: 14px; }
+  </style>
+</head>
+<body>
+
+  <h1>Intelligent Traffic Signal & Urban Congestion Management</h1>
+
+  <!-- Alerts Section -->
+  <div id="alertsContainer"></div>
+
+  <!-- Analytics Summary -->
+  <div class="grid">
+    <div class="card">
+      <h3>Total Vehicles Monitored</h3>
+      <p id="totalVehicles" style="font-size: 24px; font-weight: bold;">0</p>
+    </div>
+    <div class="card">
+      <h3>Most Congested Intersection</h3>
+      <p id="mostCongested" style="font-size: 18px; font-weight: bold;">--</p>
+    </div>
+    <div class="card">
+      <h3>Active Emergencies / Closures</h3>
+      <p id="activeAdvisories" style="font-size: 18px; font-weight: bold;">None</p>
+    </div>
+  </div>
+
+  <!-- Intersection Filtering -->
+  <div class="filters">
+    <label for="congestionFilter">Filter by Congestion Level: </label>
+    <select id="congestionFilter" onchange="filterTable()">
+      <option value="ALL">All</option>
+      <option value="Low">Low</option>
+      <option value="Moderate">Moderate</option>
+      <option value="High">High</option>
+      <option value="Critical">Critical</option>
+    </select>
+  </div>
+
+  <!-- Intersections Table -->
+  <table id="trafficTable">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Location</th>
+        <th>Vehicle Count</th>
+        <th>Avg Waiting Time (s)</th>
+        <th>Signal Status</th>
+        <th>Congestion Level</th>
+        <th>Suggested Signal Adjustment</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- Advisories & Closures -->
+  <div class="card" style="margin-top: 20px;">
+    <h2>Traffic Diversions & Road Closures</h2>
+    <ul id="advisoriesList"></ul>
+  </div>
+
+  <script>
+    const intersections = [
+      { id: 'INT-01', location: 'MG Road & 4th Cross', count: 142, waitTime: 135, status: 'RED', level: 'Critical', suggestion: 'Extend Green Phase by +30s' },
+      { id: 'INT-02', location: 'Station Square', count: 95, waitTime: 110, status: 'GREEN', level: 'High', suggestion: 'Extend Green Phase by +15s' },
+      { id: 'INT-03', location: 'Tech Park Avenue', count: 60, waitTime: 45, status: 'GREEN', level: 'Moderate', suggestion: 'Maintain Optimal Cycle' },
+      { id: 'INT-04', location: 'West Boulevard', count: 30, waitTime: 20, status: 'GREEN', level: 'Low', suggestion: 'Reduce Green Phase -10s' },
+      { id: 'INT-05', location: 'Hospital Junction', count: 180, waitTime: 150, status: 'RED', level: 'Critical', suggestion: 'Priority Override: Ambulance Approach' }
+    ];
+
+    const advisories = [
+      { road: 'Hospital Junction - North Lane', status: 'CLOSED', advisory: 'Emergency vehicle corridor active. Diversion via East Bypass.' },
+      { road: 'MG Road Underpass', status: 'PARTIAL', advisory: 'Waterlogging reported. Reduce speed to 20 km/h.' }
+    ];
+
+    function renderDashboard(filter = 'ALL') {
+      const tbody = document.querySelector('#trafficTable tbody');
+      const alertsDiv = document.getElementById('alertsContainer');
+      tbody.innerHTML = '';
+      alertsDiv.innerHTML = '';
+
+      let totalVehicles = 0;
+      let maxWait = -1;
+      let mostCongestedName = '--';
+
+      const filtered = filter === 'ALL' ? intersections : intersections.filter(i => i.level === filter);
+
+      filtered.forEach(item => {
+        totalVehicles += item.count;
+        if (item.waitTime > maxWait) {
+          maxWait = item.waitTime;
+          mostCongestedName = `${item.id} (${item.location})`;
+        }
+
+        if (item.waitTime > 120) {
+          alertsDiv.innerHTML += `<div class="alert-box">ALERT: Intersection ${item.id} (${item.location}) average waiting time is ${item.waitTime}s (Exceeds 120s limit!)</div>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.id}</td>
+          <td>${item.location}</td>
+          <td>${item.count}</td>
+          <td>${item.waitTime}</td>
+          <td>${item.status}</td>
+          <td><span class="badge ${item.level}">${item.level}</span></td>
+          <td>${item.suggestion}</td>
+        `;
+        tbody.appendChild.commit ? tbody.appendChild(tr) : tbody.appendChild(tr);
+      });
+
+      document.getElementById('totalVehicles').innerText = totalVehicles;
+      document.getElementById('mostCongested').innerText = mostCongestedName;
+
+      const advList = document.getElementById('advisoriesList');
+      advList.innerHTML = '';
+      advisories.forEach(adv => {
+        advList.innerHTML += `<li><strong>${adv.road}</strong> [${adv.status}]: ${adv.advisory}</li>`;
+      });
+      document.getElementById('activeAdvisories').innerText = `${advisories.length} Active`;
+    }
+
+    function filterTable() {
+      const val = document.getElementById('congestionFilter').value;
+      renderDashboard(val);
+    }
+
+    renderDashboard();
+  </script>
+</body>
+</html>
